@@ -1,0 +1,1 @@
+"""Módulo geoespacial do AgroData — Malha Municipal IBGE e integração com PAM."""
