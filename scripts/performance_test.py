@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """Script de validação de performance do MVP1."""
 
 from __future__ import annotations
