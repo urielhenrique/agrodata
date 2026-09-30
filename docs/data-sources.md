@@ -245,3 +245,142 @@ O projeto mantém duas camadas distintas com granularidades diferentes:
 - **GeoJSON "Todos/Produção"**: 847 features, 10.45 MB
 - **GeoJSON "Milho/Produção"**: 847 features
 - **GeoJSON "Soja/Produção"**: 290 features
+
+---
+
+## INMET BDMEP — MVP2.1 (Minas Gerais, 2023)
+
+### A. Fonte oficial
+- Fonte: INMET / BDMEP (dados históricos).
+- URL do ano implementado: https://portal.inmet.gov.br/dadoshistoricos/2023/BDMEP_2023.zip
+- Formato: um ZIP anual contendo um CSV por estação.
+- CSV: encoding `latin-1`, separador `;`, decimal `,`, header de 8 linhas (7 de metadados + 1 de cabeçalho).
+- Missing da fonte (`-9999`, vazio, `NaN`) é convertido para `None`/`null`, nunca para zero.
+
+### Estrutura dos CSVs (8 linhas de metadados + dados)
+| Linha | Conteúdo |
+|-------|----------|
+| 1 | Região;Sudeste |
+| 2 | UF;MG |
+| 3 | Estação;NOME DA ESTAÇÃO |
+| 4 | Código (WMO);CÓDIGO_WMO |
+| 5 | Latitude;-19,92 |
+| 6 | Longitude;-43,93 |
+| 7 | Altitude;852,0 |
+| 8 | Data;Hora UTC;PRECIPITAÇÃO...;TEMPERATURA MÁXIMA...;TEMPERATURA MÍNIMA... |
+
+### B. Escopo implementado
+- Ano: 2023 (parâmetro `ano` aceita 2000–2030, escopo validado em 2023).
+- UF: MG (parâmetro `uf`, filtro por metadata do CSV).
+- Observações horárias.
+- Variáveis (códigos internos): `precipitacao`, `temp_max`, `temp_min`.
+- Catálogo de estações a partir do header do CSV.
+- Pipeline executável localmente e com fixtures ZIP locais nos testes (sem internet).
+
+### C. RAW
+- Localização lógica: `data/raw/inmet/{ano}/BDMEP_{ano}.zip` (ex.: `data/raw/inmet/2023/BDMEP_2023.zip`).
+- CSVs extraídos em `data/raw/inmet/{ano}/extracted/` apenas como área temporária de trabalho.
+- RAW tratado como fonte imutável: reutilizado via `reutilizar_raw`, sobrescrito somente com `permitir_sobrescrever_raw=True`.
+- Download com retry/timeout/streaming (`INMETClient`).
+- Dados brutos **não** são versionados no Git.
+
+### D. Processed
+- `data/processed/inmet/observations_hourly/year={ano}/uf={UF}/part-0.parquet`
+- `data/processed/inmet/stations/stations.parquet`
+- Formato Parquet (PyArrow, `snappy`).
+- `datetime` e `extracted_at` como `timestamp[us, tz=UTC]`; `value` como `float64` nullable (`null` = missing).
+- Particionamento físico: `year=` / `uf=`.
+- Sem ordenação garantida antes da escrita.
+
+#### Observações horárias (`observations_hourly`)
+| Campo | Tipo | Descrição |
+|-------|------|-----------|
+| station_id | utf8 | Código INMET (ex: A808) — PK parte 1 |
+| datetime | timestamp[us, tz=UTC] | Timestamp horário UTC — PK parte 2 |
+| variable | utf8 | Enum: precipitacao, temp_max, temp_min — PK parte 3 |
+| value | float64 | Valor medido (null = missing) |
+| source | utf8 | Constante "INMET_BDMEP" |
+| extracted_at | timestamp[us, tz=UTC] | Momento da extração |
+| raw_row_hash | utf8 | SHA256 da linha bruta do CSV |
+| ingestion_run_id | utf8 | UUID da execução do pipeline |
+| quality_flag | utf8 | valid/missing/out_of_range/suspect |
+
+#### Dimensão de estações (`stations`)
+| Campo | Tipo |
+|-------|------|
+| station_id | utf8 (PK) |
+| wmo_id | utf8 |
+| name | utf8 |
+| uf | utf8 |
+| latitude | float64 |
+| longitude | float64 |
+| altitude | float64 |
+| data_inicio | timestamp[us, tz=UTC] |
+| data_fim | timestamp[us, tz=UTC] |
+| source | utf8 |
+| extracted_at | timestamp[us, tz=UTC] |
+| ingestion_run_id | utf8 |
+
+### E. Lineage
+- `source`: origem fixa `"INMET_BDMEP"`.
+- `extracted_at`: quando a execução ocorreu.
+- `raw_row_hash`: SHA256 da linha original do CSV (bytes `latin-1`, antes de qualquer conversão), permitindo rastrear/dedup por linha fonte.
+- `ingestion_run_id`: UUID por execução do pipeline.
+
+### F. Qualidade (8 regras)
+| # | Regra | Severidade real no código | Ação |
+|---|-------|---------------------------|------|
+| 1 | Missing (`-9999`/vazio) | Info (contagem) | `value=None`, `quality_flag="missing"`, registro mantido |
+| 2 | Precipitação < 0 | Warning | `quality_flag="out_of_range"` |
+| 3 | `temp_max < temp_min` (mesma estação+datetime) | Warning | contabilizado, não bloqueia |
+| 4 | Temperatura fora de [-50, 60] | **Error/bloqueante** | `quality_flag="out_of_range"`, `valido=False` |
+| 5 | Precipitação > 500 mm/h | Warning | `quality_flag="suspect"` |
+| 6 | Duplicidade da chave lógica | **Error/bloqueante** | `valido=False` |
+| 7 | Gap temporal > 24h | Info/Warning (contagem) | relatório apenas |
+| 8 | Estação sem metadata | Warning (contagem) | relatório apenas |
+
+**Política real:** somente errors (regras 4 e 6, `erros = duplicidade_pk + temperatura_fora_faixa`) tornam `QualityReport.valido=False`. Quando inválido, `executar_pipeline` lança `RuntimeError` **antes** da persistência; nenhum Parquet válido da execução é produzido. Warnings/infos não interrompem.
+
+### G. Chave lógica
+- `(station_id, datetime, variable)`.
+- Duplicidade é detectada por `drop_duplicates` sobre essa chave.
+- Duplicatas **não** são removidas automaticamente; a execução é bloqueada.
+
+### H. Timezone
+- Fonte: coluna `Hora UTC` + `Data`, interpretada como UTC (`pd.to_datetime(..., utc=True)`).
+- Registros Pydantic e DataFrame mantêm datetime timezone-aware UTC.
+- Parquet usa `timestamp[us, tz=UTC]`.
+- Teste E2E (`test_timezone_utc_roundtrip`) garante `2023-01-01/1200` → `2023-01-01T12:00:00+00:00` no round-trip.
+- Não há validação independente do relógio da fonte além do nome da coluna.
+
+### Módulos implementados
+- `src/agrodata/pipelines/inmet/client.py` — Download HTTP com retry/timeout/streaming
+- `src/agrodata/pipelines/inmet/schemas.py` — Pydantic models
+- `src/agrodata/pipelines/inmet/parser.py` — Leitura ZIP/CSV latin-1/`;`/decimal `,`/header 8
+- `src/agrodata/pipelines/inmet/transform.py` — Normalização + validação de faixas
+- `src/agrodata/pipelines/inmet/quality.py` — 8 regras + QualityReport
+- `src/agrodata/pipelines/inmet/load.py` — PyArrow Parquet particionado
+- `src/agrodata/pipelines/inmet/pipeline.py` — Orquestração + bloqueio em quality inválido
+- `src/agrodata/pipelines/inmet/station_catalog.py` — Metadata + filtro UF
+
+### I. Testes
+- Total do projeto: **415 passed** (`pytest -q`).
+- Específicos INMET: **73 passed** (`pytest tests/ -k inmet -q`).
+- Integração/E2E INMET (`tests/test_inmet_integration.py`): **5 testes** — pipeline válido com 2 estações, round-trip Parquet, bloqueio por duplicidade, round-trip timezone UTC, determinismo de `raw_row_hash`.
+- Fixtures pequenas em `tests/` (CSVs inline de 1–2 estações), sem ZIP anual completo no repositório.
+- Ruff: `ruff check .` → **All checks passed**.
+
+### J. Limitações do MVP2.1 (não incluído)
+- Backfill completo 2000–2026 (só 2023 validado).
+- Múltiplas UFs simultâneas em produção.
+- Interpolação espacial.
+- Agregação/join estação → município IBGE.
+- Dashboard climático.
+- ML.
+- Airflow/Prefect.
+- Banco de dados/PostGIS.
+- Variáveis além de `precipitacao`, `temp_max`, `temp_min`.
+- SCD2 em `stations`.
+
+### K. Próxima etapa
+- MVP2.2 previsto: integração espacial estação → município (não implementada neste MVP).
