@@ -383,4 +383,85 @@ O projeto mantém duas camadas distintas com granularidades diferentes:
 - SCD2 em `stations`.
 
 ### K. Próxima etapa
-- MVP2.2 previsto: integração espacial estação → município (não implementada neste MVP).
+- MVP2.2: integração espacial estação → município (ver seção MVP2.2 abaixo).
+
+---
+
+## INMET → Município — MVP2.2 (Minas Gerais, 2023)
+
+### Objetivo
+Atribuir cada estação INMET ao município IBGE que a contém, sem interpolar
+ou agregar clima por município neste MVP.
+
+**Princípio:** INMET fornece o ponto. IBGE fornece a autoridade territorial.
+O `municipio_id` vem exclusivamente da malha.
+
+### Fontes
+- Estações: `data/processed/inmet/stations/stations.parquet` (MVP2.1).
+- Malha: `data/processed/ibge/malha_municipal/mg_municipios_2023.parquet` (MVP1).
+- Escopo: ano 2023, UF MG, estações do catálogo atual.
+
+### CRS
+- Coordenadas INMET (`StationDimension.latitude/longitude`) consideradas
+  **EPSG:4326**, conforme schema atual.
+- Malha processada em **EPSG:4674** (inalterada).
+- Fluxo obrigatório: pontos `EPSG:4326` → `to_crs("EPSG:4674")` antes do join.
+  Comparação direta 4326 × 4674 não é permitida.
+
+### Método point-in-polygon
+- Módulo: `src/agrodata/geospatial/station_link.py`.
+- `predicate="within"` (`geopandas.sjoin`, `how="left"`).
+- Sem `nearest`, sem `buffer`, sem tolerância arbitrária, sem `buffer(0)`.
+- Malha validada via validadores do MVP1 (`_validar_malha_para_integracao`
+  + exigência `EPSG:4674`).
+
+### Estados
+| Status | Significado | metodo |
+|--------|-------------|--------|
+| `matched` | exatamente 1 município contém o ponto | `within` |
+| `unmatched` | nenhum município contém o ponto (ex.: fora da malha, sobre fronteira — `within` exclui borda) | `sem_atribuicao` |
+| `ambiguous` | mais de 1 município contém o ponto (sobreposição) | `sem_atribuicao` |
+
+`unmatched`/`ambiguous` nunca são convertidos em `matched` neste MVP.
+
+### Artefato station_municipality
+- Caminho: `data/processed/inmet/station_municipality/year=2023/uf=MG/part-0.parquet`
+  (PyArrow, `snappy`; não versionado no Git).
+- Orquestração: `executar_link_estacoes()` com paths injetáveis
+  (`stations.parquet` → `station_municipality.parquet`); não altera o
+  pipeline de ingestão INMET.
+
+### Schema
+| Campo | Tipo | Origem |
+|-------|------|--------|
+| station_id | string | INMET |
+| wmo_id | string (nullable) | INMET |
+| municipio_id | string 7 dígitos (nullable) | malha IBGE |
+| municipio_nome | string (nullable) | malha IBGE |
+| uf | string | INMET |
+| latitude | float64 | INMET |
+| longitude | float64 | INMET |
+| crs_origem | string (`EPSG:4326`) | link |
+| crs_processamento | string (`EPSG:4674`) | link |
+| metodo | string (`within`/`sem_atribuicao`) | link |
+| status | string (`matched`/`unmatched`/`ambiguous`) | link |
+| versao_malha | string (`IBGE_Malha_Municipal_2023_MG`) | link |
+
+### Relatório de cobertura
+Estrutura tipada `RelatorioCobertura`: `total_estacoes`, `matched`,
+`unmatched`, `ambiguous`, `coordenadas_invalidas`, `percentual_matched`.
+Estações sem lat/lon válida não entram no join e contam como
+`coordenadas_invalidas`, sem apagar a dimensão original.
+
+### Limitações (não incluído)
+- Interpolação/IDW/Kriging, agregação climática por município, médias
+  diárias/mensais, multi-UF, backfill, dashboard, ML, banco de dados,
+  Airflow/Prefect, `nearest`, `buffer`, tolerância espacial.
+
+### Relação com MVP1 e MVP2.1
+- Reutiliza malha MVP1 e `stations` MVP2.1 sem alterar seus schemas.
+- Segue os mesmos padrões: RAW imutável, CRS explícito, validações que
+  falham com `RuntimeError`, testes determinísticos sem internet.
+
+> Cobertura real de MG não é declarada aqui; depende da execução do
+> pipeline real contra o catálogo INMET e a malha completos.
