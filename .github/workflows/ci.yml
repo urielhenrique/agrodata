@@ -38,6 +38,10 @@ jobs:
         run: |
           uv run ruff check .
 
+      - name: Prepare test data
+        run: |
+          uv run python scripts/prepare_test_data.py
+
       - name: Run pytest
         run: |
           uv run pytest --tb=short -q

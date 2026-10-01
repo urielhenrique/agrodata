@@ -1,0 +1,238 @@
+[
+  {
+    "id": "8331",
+    "variavel": "Área plantada ou destinada à colheita",
+    "unidade": "Hectares",
+    "resultados": [
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40124": "Soja (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "5103403",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "Cuiabá (MT)"
+            },
+            "serie": {
+              "2023": "790"
+            }
+          }
+        ]
+      },
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40122": "Milho (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "5103403",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "Cuiabá (MT)"
+            },
+            "serie": {
+              "2023": "350"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "214",
+    "variavel": "Quantidade produzida",
+    "unidade": "Toneladas",
+    "resultados": [
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40124": "Soja (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "5103403",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "Cuiabá (MT)"
+            },
+            "serie": {
+              "2023": "2686"
+            }
+          }
+        ]
+      },
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40122": "Milho (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "5103403",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "Cuiabá (MT)"
+            },
+            "serie": {
+              "2023": "2135"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "112",
+    "variavel": "Rendimento médio da produção",
+    "unidade": "Quilogramas por Hectare",
+    "resultados": [
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40124": "Soja (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "5103403",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "Cuiabá (MT)"
+            },
+            "serie": {
+              "2023": "3400"
+            }
+          }
+        ]
+      },
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40122": "Milho (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "5103403",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "Cuiabá (MT)"
+            },
+            "serie": {
+              "2023": "6100"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "215",
+    "variavel": "Valor da produção",
+    "unidade": "Mil Reais",
+    "resultados": [
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40124": "Soja (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "5103403",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "Cuiabá (MT)"
+            },
+            "serie": {
+              "2023": "6355"
+            }
+          }
+        ]
+      },
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40122": "Milho (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "5103403",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "Cuiabá (MT)"
+            },
+            "serie": {
+              "2023": "1815"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

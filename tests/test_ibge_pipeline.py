@@ -61,8 +61,7 @@ MUNICIPIOS_FAKE = [
     {"id": "3100302", "nome": "Abre Campo (MG)"},
 ]
 
-DATA_RAW_DIR = Path("data/raw/ibge/pam")
-DATA_PROCESSED_DIR = Path("data/processed/ibge/pam")
+FIXTURES_PAM_DIR = Path(__file__).parent / "fixtures" / "ibge" / "pam"
 
 
 # ---------------------------------------------------------------------------
@@ -890,16 +889,13 @@ class TestMetricas:
 
 
 class TestIntegracaoPipeline:
-    """Testes de integração usando JSONs RAW existentes no disco.
+    """Testes de integração usando fixture versionada (sem rede, sem data/raw).
 
-    Estes testes NÃO fazem chamadas à API. Usam os arquivos RAW já
-    baixados para validar o fluxo de transformação → DataFrame → quality.
+    Estes testes NÃO fazem chamadas à API. Usam a fixture
+    ``pam_5457_2023_amostra.json`` para validar o fluxo
+    transformação → DataFrame → quality.
     """
 
-    @pytest.mark.skipif(
-        not (DATA_RAW_DIR / "pam_5457_2023_amostra.json").exists(),
-        reason="Arquivo RAW amostra não encontrado",
-    )
     def test_fluxo_com_amostra(self, tmp_path: Path) -> None:
         """Testa transformação → DataFrame → quality com dados reais."""
         from agrodata.pipelines.ibge.load import registros_para_dataframe
@@ -910,8 +906,8 @@ class TestIntegracaoPipeline:
         )
         from agrodata.pipelines.ibge.transform import transformar_resposta_pam
 
-        # Carrega JSON real
-        raw_path = DATA_RAW_DIR / "pam_5457_2023_amostra.json"
+        # Carrega fixture versionada
+        raw_path = FIXTURES_PAM_DIR / "pam_5457_2023_amostra.json"
         with raw_path.open(encoding="utf-8") as f:
             dados = json.load(f)
 

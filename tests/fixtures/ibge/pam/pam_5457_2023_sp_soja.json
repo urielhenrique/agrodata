@@ -1,0 +1,68 @@
+[
+  {
+    "id": "8331",
+    "variavel": "Área plantada ou destinada à colheita",
+    "unidade": "Hectares",
+    "resultados": [
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40124": "Soja (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "3550308",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "São Paulo (SP)"
+            },
+            "serie": {
+              "2023": "-"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "214",
+    "variavel": "Quantidade produzida",
+    "unidade": "Toneladas",
+    "resultados": [
+      {
+        "classificacoes": [
+          {
+            "id": "782",
+            "nome": "Produto das lavouras temporárias e permanentes",
+            "categoria": {
+              "40124": "Soja (em grão)"
+            }
+          }
+        ],
+        "series": [
+          {
+            "localidade": {
+              "id": "3550308",
+              "nivel": {
+                "id": "N6",
+                "nome": "Município"
+              },
+              "nome": "São Paulo (SP)"
+            },
+            "serie": {
+              "2023": "-"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

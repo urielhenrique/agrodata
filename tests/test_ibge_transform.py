@@ -14,12 +14,12 @@ from agrodata.pipelines.ibge.transform import (
 )
 
 # ---------------------------------------------------------------------------
-# Paths para dados reais
+# Paths para fixtures versionadas (pequenas, determinísticas)
 # ---------------------------------------------------------------------------
 
-DATA_DIR = Path("data/raw/ibge/pam")
-ARQUIVO_AMOSTRA = DATA_DIR / "pam_5457_2023_amostra.json"
-ARQUIVO_SP_SOJA = DATA_DIR / "pam_5457_2023_sp_soja.json"
+FIXTURES_DIR = Path(__file__).parent / "fixtures" / "ibge" / "pam"
+ARQUIVO_AMOSTRA = FIXTURES_DIR / "pam_5457_2023_amostra.json"
+ARQUIVO_SP_SOJA = FIXTURES_DIR / "pam_5457_2023_sp_soja.json"
 
 
 def _carregar_json(caminho: Path) -> list[dict]:
